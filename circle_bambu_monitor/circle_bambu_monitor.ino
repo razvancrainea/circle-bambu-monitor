@@ -18,8 +18,8 @@ using namespace websockets;
 /**********************************************************
  * FIRMWARE VERSION
  **********************************************************/
-#define FW_VERSION "0.11.15"
-#define FW_DISPLAY_VERSION "0.11.15"
+#define FW_VERSION "0.11.16"
+#define FW_DISPLAY_VERSION "0.11.16"
 
 /**********************************************************
  * DISPLAY PIN CONFIGURATION
@@ -1585,11 +1585,11 @@ bool readOneInitialState(String entityId) {
   return true;
 }
 
-void readInitialStates() {
+void readInitialStates(bool showProgress = true) {
   if (WiFi.status() != WL_CONNECTED) return;
   if (cfg.haUrl.isEmpty() || cfg.haToken.isEmpty()) return;
 
-  Serial.println("Reading initial HA states...");
+  Serial.println(showProgress ? "Reading initial HA states..." : "Refreshing HA states...");
 
   int loaded = 0;
   unsigned long start = millis();
@@ -1611,12 +1611,16 @@ void readInitialStates() {
   for (int i = 0; i < totalEntities; i++) {
     if (millis() - start > initialStateTotalTimeout) {
       Serial.println("Initial HA states timeout, continuing boot.");
-      showBootMessage("HA", "REST timeout");
+      if (showProgress) {
+        showBootMessage("HA", "REST timeout");
+      }
       serviceUiDuringRest();
       break;
     }
 
-    showBootMessage("HA", "Reading " + String(i + 1) + "/" + String(totalEntities));
+    if (showProgress) {
+      showBootMessage("HA", "Reading " + String(i + 1) + "/" + String(totalEntities));
+    }
     loaded += readOneInitialState(entities[i]) ? 1 : 0;
     serviceUiDuringRest();
   }
@@ -2726,7 +2730,7 @@ void loop() {
       wsSubscribed = false;
 
       if (connectWebSocket()) {
-        readInitialStates();
+        readInitialStates(false);
       }
 
       uiDirty = true;
